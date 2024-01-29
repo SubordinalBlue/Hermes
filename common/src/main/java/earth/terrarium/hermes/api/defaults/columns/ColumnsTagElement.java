@@ -1,6 +1,5 @@
 package earth.terrarium.hermes.api.defaults.columns;
 
-import earth.terrarium.hermes.api.Alignment;
 import earth.terrarium.hermes.api.TagElement;
 import earth.terrarium.hermes.api.themes.Theme;
 import net.minecraft.client.gui.GuiGraphics;
@@ -33,14 +32,12 @@ public class ColumnsTagElement implements TagElement {
     @Override
     public void render(Theme theme, GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY, boolean hovered, float partialTicks) {
         int index = 0;
-        int areaHeight = this.getHeight(width);
+        int columnsHeight = this.getHeight(width);
         for (TagElement element : elements) {
             int columnWidth = this.widthFunction.apply(index, width);
-            int offsetY = 0;
             if (element instanceof ColumnTagElement column) {
-                offsetY = Alignment.getOffset(areaHeight, element.getHeight(columnWidth), column.vAlign);
+                column.render(theme, graphics, x, y, columnWidth, columnsHeight, mouseX, mouseY, hovered, partialTicks);
             }
-            element.render(theme, graphics, x, y + offsetY, columnWidth, mouseX, mouseY, hovered, partialTicks);
             index++;
             x += columnWidth;
         }
