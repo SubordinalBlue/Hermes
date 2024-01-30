@@ -1,6 +1,7 @@
 package earth.terrarium.hermes.api.defaults.columns;
 
 import earth.terrarium.hermes.api.TagElement;
+import earth.terrarium.hermes.api.defaults.FillAndBorderElement;
 import earth.terrarium.hermes.api.themes.Theme;
 import net.minecraft.client.gui.GuiGraphics;
 import org.jetbrains.annotations.NotNull;
@@ -9,13 +10,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class ColumnsTagElement implements TagElement {
+public class ColumnsTagElement extends FillAndBorderElement implements TagElement {
 
     protected final List<TagElement> elements = new ArrayList<>();
 
     private final Function widthFunction;
 
     public ColumnsTagElement(Map<String, String> parameters) {
+        super(parameters);
         if (parameters.containsKey("template")) {
             String template = parameters.get("template");
             String[] columns = template.split(" ");
@@ -23,20 +25,24 @@ public class ColumnsTagElement implements TagElement {
             for (int i = 0; i < columns.length; i++) {
                 widths[i] = columns[i].endsWith("%") ? Integer.parseInt(columns[i].substring(0, columns[i].length() - 1)) : Integer.parseInt(columns[i]);
             }
-            this.widthFunction = (index, width) -> index < 0 || index >= widths.length ? 0 : (int) (width * widths[index] / 100f);
+            this.widthFunction = (index, width) -> index < 0 || index >= widths.length ? 0 : Math.round(width * widths[index] / 100f);
         } else {
-            this.widthFunction = (index, width) -> (int) (width / (float) this.elements.size());
+            this.widthFunction = (index, width) -> Math.round((float) width / this.elements.size());
         }
     }
 
     @Override
     public void render(Theme theme, GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY, boolean hovered, float partialTicks) {
+
+        int contentWidth = width - (2 * xSurround);
+        int contentHeight = this.getHeight(contentWidth) - (2 * ySurround);
+        drawFillAndBorder(graphics, x + xSurround, y + ySurround, contentWidth, contentHeight);
+
         int index = 0;
-        int columnsHeight = this.getHeight(width);
         for (TagElement element : elements) {
-            int columnWidth = this.widthFunction.apply(index, width);
+            int columnWidth = this.widthFunction.apply(index, contentWidth);
             if (element instanceof ColumnTagElement column) {
-                column.render(theme, graphics, x, y, columnWidth, columnsHeight, mouseX, mouseY, hovered, partialTicks);
+                column.render(theme, graphics, x + xSurround, y + ySurround, columnWidth, contentHeight, mouseX, mouseY, hovered, partialTicks);
             }
             index++;
             x += columnWidth;
