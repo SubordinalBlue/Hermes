@@ -79,9 +79,6 @@ public class ColumnsTagElement extends FillAndBorderElement implements TagElemen
         if (!(element instanceof ColumnTagElement)) {
             throw new IllegalArgumentException("Columns can only contain columns.");
         }
-        if (this.elements.size() > 2) {
-            throw new IllegalArgumentException("Columns can only contain up to three columns.");
-        }
         this.elements.add(element);
     }
 
