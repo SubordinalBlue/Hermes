@@ -31,6 +31,10 @@ public interface TagElement {
         return 0;
     }
 
+    default int getWidth() {
+        return 0;
+    }
+
     default boolean mouseClicked(double mouseX, double mouseY, int button, int width) {
         return false;
     }
