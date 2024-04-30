@@ -81,4 +81,9 @@ public class ImageTagElement extends FillAndBorderElement implements TagElement 
     public int getHeight(int width) {
         return this.imageHeight + (2 * ySurround);
     }
+
+    @Override
+    public int getWidth() {
+        return this.imageWidth;
+    }
 }

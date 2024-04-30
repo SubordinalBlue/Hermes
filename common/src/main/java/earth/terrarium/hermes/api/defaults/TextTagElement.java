@@ -25,6 +25,7 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
     protected MutableComponent component = Component.empty();
     protected Alignment align;
     protected boolean shadowed;
+    protected int minWidth;
 
     public TextTagElement(Map<String, String> parameters) {
         super(parameters);
@@ -38,6 +39,7 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
         );
         this.align = ElementParsingUtils.parseAlignment(parameters, "align", Alignment.MIN);
         this.shadowed = ElementParsingUtils.parseBoolean(parameters, "shadowed", true);
+        this.minWidth = ElementParsingUtils.parseInt(parameters, "minWidth", 0);
     }
 
     @Override
@@ -96,6 +98,11 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
         int lines = font.split(component, width - (5 + (2 * xSurround))).size();
         int lineHeight = font.lineHeight;
         return ((lines * lineHeight) + (lines - 2)) + (2 * ySurround);
+    }
+
+    @Override
+    public int getWidth() {
+        return this.minWidth;
     }
 
     @Override

@@ -48,4 +48,8 @@ public class ItemTagElement extends FillAndBorderElement implements TagElement {
     public int getHeight(int width) {
         return Mth.ceil(16 * scale) + (2 * ySurround);
     }
+
+    @Override
+    public int getWidth() { return Math.round(16 * scale); }
+
 }
