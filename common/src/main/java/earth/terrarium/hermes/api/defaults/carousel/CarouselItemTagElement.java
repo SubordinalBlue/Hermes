@@ -34,6 +34,11 @@ public class CarouselItemTagElement implements TagElement {
     }
 
     @Override
+    public int getWidth() {
+        return this.children.stream().mapToInt(TagElement::getWidth).max().orElse(0);
+    }
+
+    @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button, int width) {
         for (TagElement element : this.children) {
             if (element.mouseClicked(mouseX, mouseY, button, width)) {
@@ -53,4 +58,5 @@ public class CarouselItemTagElement implements TagElement {
     public @NotNull List<TagElement> getChildren() {
         return this.children;
     }
+
 }

@@ -46,6 +46,11 @@ public abstract class ListTagElement implements TagElement {
     }
 
     @Override
+    public int getWidth() {
+        return this.children.stream().mapToInt(TagElement::getWidth).max().orElse(0);
+    }
+
+    @Override
     public void addChild(TagElement element) {
         if (!(element instanceof ListItemTagElement)) {
             throw new IllegalArgumentException("Lists can only contain list items.");
@@ -57,4 +62,5 @@ public abstract class ListTagElement implements TagElement {
     public @NotNull List<TagElement> getChildren() {
         return this.children;
     }
+
 }

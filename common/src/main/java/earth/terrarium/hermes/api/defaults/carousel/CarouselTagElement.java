@@ -56,6 +56,11 @@ public class CarouselTagElement implements TagElement {
         return 20;
     }
 
+    @Override
+    public int getWidth() {
+        return this.children.stream().mapToInt(TagElement::getWidth).max().orElse(0);
+    }
+
     private TagElement getCurrentChild() {
         if (this.children.isEmpty() || this.index < 0 || this.index >= this.children.size()) {
             return null;
@@ -105,4 +110,5 @@ public class CarouselTagElement implements TagElement {
     public @NotNull List<TagElement> getChildren() {
         return this.children;
     }
+
 }

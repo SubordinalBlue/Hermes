@@ -67,4 +67,9 @@ public class HintTagElement implements TagElement {
     public @NotNull List<TagElement> getChildren() {
         return this.children;
     }
+
+    @Override
+    public int getWidth() {
+        return this.children.stream().mapToInt(TagElement::getWidth).max().orElse(0);
+    }
 }

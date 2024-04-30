@@ -61,6 +61,10 @@ public class ColumnTagElement extends FillAndBorderElement implements TagElement
         return getChildrenHeight(width) + (2 * ySurround);
     }
 
+    public int getWidth() {
+        return this.children.stream().mapToInt(TagElement::getWidth).max().orElse(0);
+    }
+
     @Override
     public void addChild(TagElement element) {
         this.children.add(element);
@@ -70,4 +74,5 @@ public class ColumnTagElement extends FillAndBorderElement implements TagElement
     public @NotNull List<TagElement> getChildren() {
         return this.children;
     }
+
 }

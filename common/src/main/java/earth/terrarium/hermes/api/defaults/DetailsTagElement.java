@@ -64,6 +64,11 @@ public class DetailsTagElement implements TagElement {
     }
 
     @Override
+    public int getWidth() {
+        return this.children.stream().mapToInt(TagElement::getWidth).max().orElse(0);
+    }
+
+    @Override
     public void addChild(TagElement element) {
         this.children.add(element);
     }
@@ -72,4 +77,5 @@ public class DetailsTagElement implements TagElement {
     public @NotNull List<TagElement> getChildren() {
         return this.children;
     }
+
 }

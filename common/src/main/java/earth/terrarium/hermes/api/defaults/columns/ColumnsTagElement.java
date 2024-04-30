@@ -124,5 +124,5 @@ public class ColumnsTagElement extends FillAndBorderElement implements TagElemen
     public @NotNull List<TagElement> getChildren() {
         return this.children;
     }
-    
+
 }

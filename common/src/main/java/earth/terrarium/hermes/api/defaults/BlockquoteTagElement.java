@@ -43,6 +43,9 @@ public class BlockquoteTagElement implements TagElement {
     }
 
     @Override
+    public int getWidth() { return this.children.stream().mapToInt(TagElement::getWidth).max().orElse(0); }
+
+    @Override
     public void addChild(TagElement element) {
         if (!(element instanceof TextTagElement)) {
             throw new IllegalArgumentException("Blockquote elements can only contain text elements.");

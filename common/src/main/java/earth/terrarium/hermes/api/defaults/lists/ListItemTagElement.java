@@ -60,6 +60,11 @@ public class ListItemTagElement implements TagElement {
     }
 
     @Override
+    public int getWidth() {
+        return this.children.stream().mapToInt(TagElement::getWidth).max().orElse(0);
+    }
+
+    @Override
     public void setContent(String content) {
         if (!this.children.isEmpty()) {
             throw new IllegalStateException("Cannot set content of a list item that already has children.");
@@ -79,4 +84,5 @@ public class ListItemTagElement implements TagElement {
     public @NotNull List<TagElement> getChildren() {
         return this.children;
     }
+
 }
