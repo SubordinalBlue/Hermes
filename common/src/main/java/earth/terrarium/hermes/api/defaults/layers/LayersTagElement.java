@@ -42,8 +42,8 @@ public class LayersTagElement implements TagElement {
         return children.stream().mapToInt((child) -> child.getHeight(width)).max().orElse(0);
     }
 
-    // getWidth()
-    // return children.stream().mapToInt(::getWidth).max().orElse(0);
+    @Override
+    public int getWidth() { return children.stream().mapToInt(TagElement::getWidth).max().orElse(0); }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button, int width) {
