@@ -19,20 +19,21 @@ public class CraftingRecipeTagElement implements TagElement {
 
     protected ResourceLocation id;
     private final int gridWidth;
+    private final int gridSize;
+    private final int actualWidth;
+    private final int actualHeight;
 
     public CraftingRecipeTagElement(Map<String, String> parameters) {
         this.id = ElementParsingUtils.parseResourceLocation(parameters, "id", null);
         this.gridWidth = ElementParsingUtils.parseInt(parameters, "grid-width", 3);
+        this.gridSize = gridWidth * 18;
+        this.actualWidth = 5 + gridSize + 5 + 22 + 5 + 18 + 5;
+        this.actualHeight = gridSize + 10;
     }
 
     @Override
     public void render(Theme theme, GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY, boolean hovered, float partialTicks) {
         y += 1;
-
-        int gridSize = this.gridWidth * 18;
-        int actualWidth = 5 + gridSize + 5 + 22 + 5 + 18 + 5;
-        int actualHeight = gridSize + 10;
-
         x = x + (width - actualWidth) / 2;
 
         theme.drawCraftingBackground(graphics, x, y, actualWidth, actualHeight);
@@ -105,6 +106,9 @@ public class CraftingRecipeTagElement implements TagElement {
 
     @Override
     public int getHeight(int width) {
-        return (18 * this.gridWidth) + 12;
+        return actualHeight + 2;
     }
+
+    @Override
+    public int getWidth() { return actualWidth; }
 }
