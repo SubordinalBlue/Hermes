@@ -26,6 +26,7 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
     protected Alignment align;
     protected boolean shadowed;
     protected int minWidth;
+    protected static final Font font = Minecraft.getInstance().font;
 
     public TextTagElement(Map<String, String> parameters) {
         super(parameters);
@@ -47,7 +48,6 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
         x = x + xSurround;
         y = y + ySurround;
 
-        Font font = Minecraft.getInstance().font;
         List<FormattedCharSequence> lines = font.split(component, width - (5 + (2 * xSurround)));
         int maxWidth = lines.stream().mapToInt(font::width).max().orElse(0);
         int maxHeight = (lines.size() * font.lineHeight) + (lines.size() - 2);
@@ -76,7 +76,6 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button, int width) {
-        Font font = Minecraft.getInstance().font;
         int height = 0;
         for (FormattedCharSequence sequence : font.split(component, width - 5)) {
             int textOffset = getOffsetForTextTag(width, sequence);
@@ -94,7 +93,6 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
 
     @Override
     public int getHeight(int width) {
-        Font font = Minecraft.getInstance().font;
         int lines = font.split(component, width - (5 + (2 * xSurround))).size();
         int lineHeight = font.lineHeight;
         return ((lines * lineHeight) + (lines - 2)) + (2 * ySurround);
