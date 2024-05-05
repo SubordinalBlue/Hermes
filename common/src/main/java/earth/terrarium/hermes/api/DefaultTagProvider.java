@@ -5,6 +5,8 @@ import earth.terrarium.hermes.api.defaults.carousel.CarouselItemTagElement;
 import earth.terrarium.hermes.api.defaults.carousel.CarouselTagElement;
 import earth.terrarium.hermes.api.defaults.columns.ColumnTagElement;
 import earth.terrarium.hermes.api.defaults.columns.ColumnsTagElement;
+import earth.terrarium.hermes.api.defaults.layers.LayerTagElement;
+import earth.terrarium.hermes.api.defaults.layers.LayersTagElement;
 import earth.terrarium.hermes.api.defaults.lists.ListItemTagElement;
 import earth.terrarium.hermes.api.defaults.lists.OrderedListTagElement;
 import earth.terrarium.hermes.api.defaults.lists.UnorderedListTagElement;
@@ -32,6 +34,8 @@ public class DefaultTagProvider extends TagProvider {
         addSerializer("li", ListItemTagElement::new);
         addSerializer("columns", ColumnsTagElement::new);
         addSerializer("column", ColumnTagElement::new);
+        addSerializer("layers", LayersTagElement::new);
+        addSerializer("layer", LayerTagElement::new);
         addSerializer("text", TextTagElement::new);
     }
 }
