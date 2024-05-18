@@ -83,6 +83,6 @@ public class EntityTagElement extends FillAndBorderElement implements TagElement
 
     @Override
     public int getWidth() {
-        return Math.round(layoutWidth);
+        return Math.round(layoutWidth) + (2 * xSurround);
     }
 }

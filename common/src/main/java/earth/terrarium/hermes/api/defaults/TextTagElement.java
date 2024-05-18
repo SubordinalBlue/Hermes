@@ -22,10 +22,12 @@ import java.util.Map;
 
 public class TextTagElement extends FillAndBorderElement implements TagElement {
 
+    protected record RangeSpec (int start, int end) {};
+    protected RangeSpec fitWidthTo = new RangeSpec(0, 0);
     protected MutableComponent component = Component.empty();
     protected Alignment align;
     protected boolean shadowed;
-    protected int minWidth;
+    protected Font font = Minecraft.getInstance().font;
 
     public TextTagElement(Map<String, String> parameters) {
         super(parameters);
@@ -39,7 +41,18 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
         );
         this.align = ElementParsingUtils.parseAlignment(parameters, "align", Alignment.MIN);
         this.shadowed = ElementParsingUtils.parseBoolean(parameters, "shadowed", true);
-        this.minWidth = ElementParsingUtils.parseInt(parameters, "minWidth", 0);
+
+        if (parameters.containsKey("fit")) {
+            // One argument is "end", with assumed start at beginning
+            // Two arguments is "start end"
+            String fitArgs = parameters.get("fit");
+            String[] args = fitArgs.split(" ");
+            int start = (args.length >= 2) ? Integer.parseInt(args[0]) : 1;
+            int end = (args.length >= 2) ? Integer.parseInt(args[1]) : Integer.parseInt(args[0]);
+            fitWidthTo = new RangeSpec(start, end);
+        }
+
+        if (component.getStyle().isItalic()) { xSurround += 1; } // Using FillAndBorder to accommodate italics' width
     }
 
     @Override
@@ -47,9 +60,8 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
         x = x + xSurround;
         y = y + ySurround;
 
-        Font font = Minecraft.getInstance().font;
-        List<FormattedCharSequence> lines = font.split(component, width - (5 + (2 * xSurround)));
-        int maxWidth = lines.stream().mapToInt(font::width).max().orElse(0);
+        List<FormattedCharSequence> lines = font.split(component, width + 1 - (2 * xSurround)); // +1 for ...
+        int maxWidth = lines.stream().mapToInt(font::width).max().orElse(0) - 1;
         int maxHeight = (lines.size() * font.lineHeight) + (lines.size() - 2);
         int offsetX = Alignment.getOffset(width, maxWidth + (2 * xSurround), align);
 
@@ -58,27 +70,25 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
         int actMouseX = mouseX - x;
         int actMouseY = mouseY - y;
         int height = 0;
-        for (FormattedCharSequence sequence : font.split(component, width - (5 + 2 * xSurround))) {
-            int textOffset = getOffsetForTextTag(width, sequence);
-            theme.drawText(graphics, sequence, x + textOffset, y + height, Color.DEFAULT, this.shadowed);
+        for (FormattedCharSequence line : lines) { //font.split(component, width - (2 * xSurround))) { //(5 + 2 * xSurround))) {
+            int textOffset = getOffsetForTextTag(width, line);
+            theme.drawText(graphics, line, x + textOffset, y + height, Color.DEFAULT, this.shadowed);
 
             if (actMouseX >= textOffset && actMouseX <= width && actMouseY >= height && actMouseY <= height + font.lineHeight) {
                 graphics.renderComponentHoverEffect(
                     font,
-                    font.getSplitter().componentStyleAtWidth(sequence, Mth.floor(actMouseX - textOffset)),
+                    font.getSplitter().componentStyleAtWidth(line, Mth.floor(actMouseX - textOffset)),
                     mouseX, mouseY
                 );
             }
-
-            height += Minecraft.getInstance().font.lineHeight + 1;
+            height += font.lineHeight + 1;
         }
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button, int width) {
-        Font font = Minecraft.getInstance().font;
         int height = 0;
-        for (FormattedCharSequence sequence : font.split(component, width - 5)) {
+        for (FormattedCharSequence sequence : font.split(component, width - 5)) { // <-- uh, maybe remove the -5 here
             int textOffset = getOffsetForTextTag(width, sequence);
             if (mouseX >= textOffset && mouseX <= width && mouseY >= height && mouseY <= height + font.lineHeight) {
                 Style style = font.getSplitter().componentStyleAtWidth(sequence, Mth.floor(mouseX - textOffset));
@@ -94,15 +104,24 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
 
     @Override
     public int getHeight(int width) {
-        Font font = Minecraft.getInstance().font;
-        int lines = font.split(component, width - (5 + (2 * xSurround))).size();
+        int lineCount = font.split(component, width + 1 - (2 * xSurround)).size();
         int lineHeight = font.lineHeight;
-        return ((lines * lineHeight) + (lines - 2)) + (2 * ySurround);
+        // explain this formula
+        return ((lineCount * lineHeight) + (lineCount - 2)) + (2 * ySurround);
     }
 
     @Override
     public int getWidth() {
-        return this.minWidth;
+        var contentString = component.getString();
+        // Convert from 1-indexing and clamp extremes; `end  can be left alone, due to String.substring's use of it.
+        int start = Math.max(fitWidthTo.start - 1, 0);
+        int end = Math.min(fitWidthTo.end, contentString.length());
+        var subString = contentString.substring(start, end);
+        var subWidth = font.width(subString);
+
+        List<FormattedCharSequence> lines = font.split(component, subWidth);
+        int maxWidth = lines.stream().mapToInt(font::width).max().orElse(0);
+        return maxWidth + (2 * xSurround) - 1; // hey, this looks like the line in getOffsetForTextTag below... is it elsewhere also?
     }
 
     @Override
@@ -127,7 +146,7 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
     }
 
     public int getOffsetForTextTag(int width, FormattedCharSequence text) {
-        int textWidth = Minecraft.getInstance().font.width(text) - 1; // -1 to trim trailing empty space
-        return Alignment.getOffset(width, textWidth + (2 * xSurround), align);
+        int textWidth = font.width(text) + (2 * xSurround) - 1; // -1 to trim trailing empty space
+        return Alignment.getOffset(width, textWidth, align);
     }
 }

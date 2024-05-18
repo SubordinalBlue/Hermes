@@ -52,10 +52,12 @@ public abstract class FillAndBorderElement implements TagElement {
     public void drawFillAndBorder(GuiGraphics graphics, int x, int y, float width, float height) {
 
         if (fill != null) {
+            // xSurround may be adjusted independently by some subclasses (ie: text elements, for italic content)
+            int xPadding = xSurround - (border != null ? border.firstInt() : 0);
             int padding = fill.firstInt();
-            int x0 = x - padding;
+            int x0 = x - xPadding;
             int y0 = y - padding;
-            int x1 = Math.round(x + width + padding);
+            int x1 = Math.round(x + width + xPadding);
             int y1 = Math.round(y + height + padding);
             graphics.fill(x0, y0, x1, y1, ensureVisible(fill.second()));
         }

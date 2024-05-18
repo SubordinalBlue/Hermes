@@ -50,6 +50,8 @@ public class ItemTagElement extends FillAndBorderElement implements TagElement {
     }
 
     @Override
-    public int getWidth() { return Math.round(16 * scale); }
+    public int getWidth() {
+        return Math.round(16 * scale) + (2 * xSurround);
+    }
 
 }
