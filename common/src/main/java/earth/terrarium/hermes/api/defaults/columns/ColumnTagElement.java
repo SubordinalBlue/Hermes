@@ -19,17 +19,21 @@ public class ColumnTagElement extends FillAndBorderElement implements TagElement
 
     public ColumnTagElement(Map<String, String> parameters) {
         super(parameters);
+        ySurround = xSurround; // Cancel the minimal ySurround = 1 for <column>s.
         this.vAlign = ElementParsingUtils.parseAlignment(parameters, "valign", Alignment.MIDDLE);
     }
 
     public void render(Theme theme, GuiGraphics graphics, int x, int y, int width, int height, int mouseX, int mouseY, boolean hovered, float partialTicks) {
 
-        int contentWidth = width - (2 * xSurround);
-        int contentHeight = height - (2 * ySurround);
-        drawFillAndBorder(graphics, x + xSurround, y + ySurround, contentWidth, contentHeight);
+        x += xSurround; // xSurround / 2
+        y += ySurround;
 
-        y += ySurround + Alignment.getOffset(contentHeight, this.getChildrenHeight(contentWidth), vAlign);
-        x += xSurround;
+        int contentWidth = width - (2 * xSurround); // xSurround
+        int contentHeight = height - (2 * ySurround); // ySurround
+        drawFillAndBorder(graphics, x, y, contentWidth, contentHeight);
+
+        y += Alignment.getOffset(contentHeight, sumChildrenHeight(contentWidth), vAlign);
+
         for (TagElement element : this.children) {
             element.render(theme, graphics, x, y, contentWidth, mouseX, mouseY, hovered, partialTicks);
             y += element.getHeight(contentWidth);
@@ -48,7 +52,8 @@ public class ColumnTagElement extends FillAndBorderElement implements TagElement
         return false;
     }
 
-    public int getChildrenHeight(int width) {
+    public int sumChildrenHeight(int width) {
+        // sum of child elements' heights
         int height = 0;
         for (TagElement element : this.children) {
             height += element.getHeight(width);
@@ -58,11 +63,11 @@ public class ColumnTagElement extends FillAndBorderElement implements TagElement
 
     @Override
     public int getHeight(int width) {
-        return getChildrenHeight(width) + (2 * ySurround);
+        return sumChildrenHeight(width) + (2 * ySurround);
     }
 
     public int getWidth() {
-        return this.children.stream().mapToInt(TagElement::getWidth).max().orElse(0);
+        return this.children.stream().mapToInt(TagElement::getWidth).max().orElse(0) + (2 * xSurround);
     }
 
     @Override
