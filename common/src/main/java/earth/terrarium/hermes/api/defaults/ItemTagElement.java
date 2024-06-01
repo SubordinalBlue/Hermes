@@ -1,5 +1,6 @@
 package earth.terrarium.hermes.api.defaults;
 
+import com.mojang.math.Axis;
 import com.teamresourceful.resourcefullib.client.CloseablePoseStack;
 import earth.terrarium.hermes.api.Alignment;
 import earth.terrarium.hermes.api.TagElement;
@@ -14,7 +15,7 @@ import net.minecraft.world.item.Items;
 
 import java.util.Map;
 
-public class ItemTagElement extends FillAndBorderElement implements TagElement {
+public class ItemTagElement extends RotateElement implements TagElement {
 
     protected final ItemStack output;
     protected final float scale;
@@ -36,11 +37,12 @@ public class ItemTagElement extends FillAndBorderElement implements TagElement {
         try (var pose = new CloseablePoseStack(graphics)) {
             float scaleSize = scale * 16;
             int offsetX = xSurround + Alignment.getOffset(width, scaleSize + (2 * xSurround), align);
-            final int offsetY = ySurround;
-            drawFillAndBorder(graphics, x + offsetX, y + offsetY, scaleSize, scaleSize);
-            pose.translate(x + offsetX, y + offsetY, 0);
+            int offsetY = ySurround;
+            pose.translate(x + offsetX + (scaleSize/2), y + offsetY + (scaleSize/2), 0);
             pose.scale(scale, scale, 1.0F);
-            graphics.renderFakeItem(output, 0, 0);
+            pose.mulPose(Axis.ZP.rotationDegrees(w));
+            drawFillAndBorder(graphics, -8, -8, 16, 16);
+            graphics.renderFakeItem(output, -8, -8);
         }
     }
 
