@@ -22,7 +22,8 @@ import java.util.Map;
 
 public class TextTagElement extends FillAndBorderElement implements TagElement {
 
-    protected record RangeSpec (int start, int end) {};
+    protected record RangeSpec (int start, int end) {}
+
     protected RangeSpec fitWidthTo = new RangeSpec(0, 0);
     protected MutableComponent component = Component.empty();
     protected Alignment align;
@@ -52,7 +53,10 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
             fitWidthTo = new RangeSpec(start, end);
         }
 
-        if (component.getStyle().isItalic()) { xSurround += 1; } // Using FillAndBorder to accommodate italics' width
+        if (component.getStyle().isItalic()) {
+            // Using FillAndBorder to accommodate italic's width
+            xSurround += 1;
+        }
     }
 
     @Override
@@ -60,7 +64,7 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
         x = x + xSurround;
         y = y + ySurround;
 
-        List<FormattedCharSequence> lines = font.split(component, width + 1 - (2 * xSurround)); // +1 for ...
+        List<FormattedCharSequence> lines = font.split(component, width + 1 - (2 * xSurround));
         int maxWidth = lines.stream().mapToInt(font::width).max().orElse(0) - 1;
         int maxHeight = (lines.size() * font.lineHeight) + (lines.size() - 2);
         int offsetX = Alignment.getOffset(width, maxWidth + (2 * xSurround), align);
@@ -70,7 +74,7 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
         int actMouseX = mouseX - x;
         int actMouseY = mouseY - y;
         int height = 0;
-        for (FormattedCharSequence line : lines) { //font.split(component, width - (2 * xSurround))) { //(5 + 2 * xSurround))) {
+        for (FormattedCharSequence line : lines) {
             int textOffset = getOffsetForTextTag(width, line);
             theme.drawText(graphics, line, x + textOffset, y + height, Color.DEFAULT, this.shadowed);
 
@@ -88,7 +92,7 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button, int width) {
         int height = 0;
-        for (FormattedCharSequence sequence : font.split(component, width - 5)) { // <-- uh, maybe remove the -5 here
+        for (FormattedCharSequence sequence : font.split(component, width + 1 - (2 * xSurround))) {
             int textOffset = getOffsetForTextTag(width, sequence);
             if (mouseX >= textOffset && mouseX <= width && mouseY >= height && mouseY <= height + font.lineHeight) {
                 Style style = font.getSplitter().componentStyleAtWidth(sequence, Mth.floor(mouseX - textOffset));
@@ -113,7 +117,7 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
     @Override
     public int getWidth() {
         var contentString = component.getString();
-        // Convert from 1-indexing and clamp extremes; `end  can be left alone, due to String.substring's use of it.
+        // Convert from 1-indexing and clamp extremes; `end`  can be left alone, due to String.substring's use of it.
         int start = Math.max(fitWidthTo.start - 1, 0);
         int end = Math.min(fitWidthTo.end, contentString.length());
         var subString = contentString.substring(start, end);
@@ -121,7 +125,7 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
 
         List<FormattedCharSequence> lines = font.split(component, subWidth);
         int maxWidth = lines.stream().mapToInt(font::width).max().orElse(0);
-        return maxWidth + (2 * xSurround) - 1; // hey, this looks like the line in getOffsetForTextTag below... is it elsewhere also?
+        return maxWidth + (2 * xSurround) - 1; // -1 to trim trailing empty space
     }
 
     @Override
