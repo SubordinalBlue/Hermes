@@ -1,5 +1,6 @@
 package earth.terrarium.hermes.api.defaults;
 
+import com.teamresourceful.resourcefullib.client.CloseablePoseStack;
 import com.teamresourceful.resourcefullib.common.color.Color;
 import earth.terrarium.hermes.api.Alignment;
 import earth.terrarium.hermes.api.TagElement;
@@ -28,6 +29,7 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
     protected MutableComponent component = Component.empty();
     protected Alignment align;
     protected boolean shadowed;
+    protected float scale;
     protected Font font = Minecraft.getInstance().font;
 
     public TextTagElement(Map<String, String> parameters) {
@@ -42,6 +44,7 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
         );
         this.align = ElementParsingUtils.parseAlignment(parameters, "align", Alignment.MIN);
         this.shadowed = ElementParsingUtils.parseBoolean(parameters, "shadowed", true);
+        this.scale = ElementParsingUtils.parseFloat(parameters, "scale", 1);
 
         if (parameters.containsKey("fit")) {
             // One argument is "end", with assumed start at beginning
@@ -61,31 +64,46 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
 
     @Override
     public void render(Theme theme, GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY, boolean hovered, float partialTicks) {
-        x = x + xSurround;
-        y = y + ySurround;
 
-        List<FormattedCharSequence> lines = font.split(component, width + 1 - (2 * xSurround));
+        int scaledWidth = Math.round(width/scale);
+        List<FormattedCharSequence> lines = font.split(component, scaledWidth + 1 - (2 * xSurround));
         int maxWidth = lines.stream().mapToInt(font::width).max().orElse(0) - 1;
         int maxHeight = (lines.size() * font.lineHeight) + (lines.size() - 2);
-        int offsetX = Alignment.getOffset(width, maxWidth + (2 * xSurround), align);
+        int offsetX = Alignment.getOffset(scaledWidth, maxWidth + (2 * xSurround), align);
 
-        drawFillAndBorder(graphics, x + offsetX, y, maxWidth, maxHeight);
+        x = x + xSurround;
+        y = y + ySurround;
+        float translationFactor = (scale - 1) / scale;
+
+        try (var pose = new CloseablePoseStack(graphics)) {
+            pose.scale(scale, scale, 0);
+            pose.translate(-x * translationFactor, -y * translationFactor, 0);
+            drawFillAndBorder(graphics, x + offsetX, y, maxWidth, maxHeight);
+        }
 
         int actMouseX = mouseX - x;
         int actMouseY = mouseY - y;
         int height = 0;
         for (FormattedCharSequence line : lines) {
-            int textOffset = getOffsetForTextTag(width, line);
-            theme.drawText(graphics, line, x + textOffset, y + height, Color.DEFAULT, this.shadowed);
+            int lineWidth = font.width(line);
+            int lineOffsetScaled = scaledOffsetForLine(width, line);
+            int lineOffsetUnscaled = antiScaledOffsetForLine(width, line);
 
-            if (actMouseX >= textOffset && actMouseX <= width && actMouseY >= height && actMouseY <= height + font.lineHeight) {
+            try (var pose = new CloseablePoseStack(graphics)) {
+                pose.scale(scale, scale, 0);
+                pose.translate(-x * translationFactor, -y * translationFactor, 0);
+                theme.drawText(graphics, line, x + lineOffsetScaled, y + height, Color.DEFAULT, this.shadowed);
+            }
+            if ((0 - (x * translationFactor)) <= actMouseX && actMouseX <= width
+                && height <= actMouseY && actMouseY <= (height + (scale * (font.lineHeight - 1)))) {
                 graphics.renderComponentHoverEffect(
                     font,
-                    font.getSplitter().componentStyleAtWidth(line, Mth.floor(actMouseX - textOffset)),
-                    mouseX, mouseY
+                    font.getSplitter().componentStyleAtWidth(line, Math.round((actMouseX - lineOffsetUnscaled) / scale)),
+                    mouseX,
+                    mouseY
                 );
             }
-            height += font.lineHeight + 1;
+            height += Math.round(scale * (font.lineHeight + 1));
         }
     }
 
@@ -93,7 +111,7 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
     public boolean mouseClicked(double mouseX, double mouseY, int button, int width) {
         int height = 0;
         for (FormattedCharSequence sequence : font.split(component, width + 1 - (2 * xSurround))) {
-            int textOffset = getOffsetForTextTag(width, sequence);
+            int textOffset = scaledOffsetForLine(width, sequence);
             if (mouseX >= textOffset && mouseX <= width && mouseY >= height && mouseY <= height + font.lineHeight) {
                 Style style = font.getSplitter().componentStyleAtWidth(sequence, Mth.floor(mouseX - textOffset));
                 if (Minecraft.getInstance().screen != null) {
@@ -111,7 +129,7 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
         int lineCount = font.split(component, width + 1 - (2 * xSurround)).size();
         int lineHeight = font.lineHeight;
         // explain this formula
-        return ((lineCount * lineHeight) + (lineCount - 2)) + (2 * ySurround);
+        return Math.round(scale * ((lineCount * lineHeight) + (lineCount - 2)) + (2 * ySurround));
     }
 
     @Override
@@ -125,7 +143,7 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
 
         List<FormattedCharSequence> lines = font.split(component, subWidth);
         int maxWidth = lines.stream().mapToInt(font::width).max().orElse(0);
-        return maxWidth + (2 * xSurround) - 1; // -1 to trim trailing empty space
+        return Math.round(scale * (maxWidth + (2 * xSurround) - 1)); // -1 to trim trailing empty space
     }
 
     @Override
@@ -149,8 +167,13 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
         return TextTagProvider.INSTANCE;
     }
 
-    public int getOffsetForTextTag(int width, FormattedCharSequence text) {
-        int textWidth = font.width(text) + (2 * xSurround) - 1; // -1 to trim trailing empty space
-        return Alignment.getOffset(width, textWidth, align);
+    public int scaledOffsetForLine(int width, FormattedCharSequence text) {
+        int lineWidth = font.width(text) + (2 * xSurround) - 1; // -1 to trim trailing empty space
+        return Alignment.getOffset(width/scale, lineWidth, align);
+    }
+
+    public int antiScaledOffsetForLine(int width, FormattedCharSequence text) {
+        int lineWidth = font.width(text) + (2 * xSurround) - 1; // -1 to trim trailing empty space
+        return Alignment.getOffset(width, scale * lineWidth, align);
     }
 }
