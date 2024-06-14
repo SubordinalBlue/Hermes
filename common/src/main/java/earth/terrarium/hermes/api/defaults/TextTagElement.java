@@ -16,7 +16,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.util.Mth;
 
 import java.util.List;
 import java.util.Map;
@@ -65,61 +64,93 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
     @Override
     public void render(Theme theme, GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY, boolean hovered, float partialTicks) {
 
-        int scaledWidth = Math.round(width/scale);
-        List<FormattedCharSequence> lines = font.split(component, scaledWidth + 1 - (2 * xSurround));
-        int maxWidth = lines.stream().mapToInt(font::width).max().orElse(0) - 1;
-        int maxHeight = (lines.size() * font.lineHeight) + (lines.size() - 2);
-        int offsetX = Alignment.getOffset(scaledWidth, maxWidth + (2 * xSurround), align);
-
-        x = x + xSurround;
-        y = y + ySurround;
         float translationFactor = (scale - 1) / scale;
+        int scaledWidth = Math.round(width/scale);
+        x += xSurround;
+        y += ySurround;
 
+        // text setup
+        List<FormattedCharSequence> lines = font.split(component, scaledWidth + 1 - (2 * xSurround));
+        int textWidth = lines.stream().mapToInt(font::width).max().orElse(0) - 1;
+        int textHeight = (lines.size() * font.lineHeight) + (lines.size() - 2);
+
+        // alignment of the full element
+        var elementWidth = textWidth + (2 * xSurround);
+        int elementOffsetX = Alignment.getOffset(scaledWidth, elementWidth, align);
+
+        // draw fill & border
         try (var pose = new CloseablePoseStack(graphics)) {
             pose.scale(scale, scale, 0);
             pose.translate(-x * translationFactor, -y * translationFactor, 0);
-            drawFillAndBorder(graphics, x + offsetX, y, maxWidth, maxHeight);
+            drawFillAndBorder(graphics, x + elementOffsetX, y, textWidth, textHeight);
         }
 
+        // draw text, line by line
+        var lineHeight = scale * (font.lineHeight - 1); // strict line-height, no spacing
         int actMouseX = mouseX - x;
         int actMouseY = mouseY - y;
         int height = 0;
         for (FormattedCharSequence line : lines) {
-            int lineWidth = font.width(line);
-            int lineOffsetScaled = scaledOffsetForLine(width, line);
-            int lineOffsetUnscaled = antiScaledOffsetForLine(width, line);
+            int lineOffset = Alignment.getOffset(scaledWidth, getLineWidth(line), align);
 
+            // draw the line
             try (var pose = new CloseablePoseStack(graphics)) {
                 pose.scale(scale, scale, 0);
                 pose.translate(-x * translationFactor, -y * translationFactor, 0);
-                theme.drawText(graphics, line, x + lineOffsetScaled, y + height, Color.DEFAULT, this.shadowed);
+                theme.drawText(graphics, line, x + lineOffset, y + height, Color.DEFAULT, this.shadowed);
             }
-            if ((0 - (x * translationFactor)) <= actMouseX && actMouseX <= width
-                && height <= actMouseY && actMouseY <= (height + (scale * (font.lineHeight - 1)))) {
-                graphics.renderComponentHoverEffect(
-                    font,
-                    font.getSplitter().componentStyleAtWidth(line, Math.round((actMouseX - lineOffsetUnscaled) / scale)),
-                    mouseX,
-                    mouseY
-                );
+
+            // deal with hovers
+            if (lineOffset <= actMouseX && actMouseX <= width
+                && height <= actMouseY && actMouseY <= height + lineHeight) {
+                Style style = font.getSplitter().componentStyleAtWidth(line, Math.round((actMouseX - (lineOffset * scale)) / scale));
+                graphics.renderComponentHoverEffect(font, style, mouseX, mouseY);
             }
-            height += Math.round(scale * (font.lineHeight + 1));
+            height += Math.round(lineHeight + 2); // add back 2 for inter-line spacing
         }
     }
 
+//    interface useStyle {
+//        public void use(Style style);
+//    }
+//
+//    public boolean withStyleAt(useStyle func, int mouseX, int mouseY, int width, int height) {
+//        var lines = font.split(component, scaledWidth + 1 - (2 * xSurround));
+//        for (var line : lines) {
+//            var lineOffset = ...;d
+//            if (...) {
+//                Style style = font.getSplitter().componentStyleAtWidth(line, ...);
+//                func.doTheThing(style);
+//                return true;
+//            }
+//            return false;
+//        }
+//    }
+//
+//    (style, mouseX, mouseY) -> { graphics.renderComponentHoverEffect(font, style, mouseX, mouseY) }
+//
+//    (style, mouseX, mouseY) -> { handleComponentClicked(style) }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button, int width) {
+        var scaledWidth = Math.round(width/scale);
+        var lines = font.split(component, scaledWidth + 1 - (2 * xSurround));
+        var lineHeight = scale * (font.lineHeight - 1); // strict line-height, no spacing
+        var actMouseX = (float) mouseX - xSurround;
         int height = 0;
-        for (FormattedCharSequence sequence : font.split(component, width + 1 - (2 * xSurround))) {
-            int textOffset = scaledOffsetForLine(width, sequence);
-            if (mouseX >= textOffset && mouseX <= width && mouseY >= height && mouseY <= height + font.lineHeight) {
-                Style style = font.getSplitter().componentStyleAtWidth(sequence, Mth.floor(mouseX - textOffset));
+        for (FormattedCharSequence line : lines) {
+            //int textOffset = scaledOffsetForLine(width, sequence);
+            int lineOffset = Alignment.getOffset(scaledWidth, getLineWidth(line), align);
+            if (mouseX >= lineOffset && mouseX <= width && mouseY >= height && mouseY <= height + lineHeight) {
+                //Style style = font.getSplitter().componentStyleAtWidth(sequence, Mth.floor(mouseX - textOffset));
+                Style style = font.getSplitter().componentStyleAtWidth(line, Math.round((actMouseX - (lineOffset * scale)) / scale));
+
                 if (Minecraft.getInstance().screen != null) {
                     Minecraft.getInstance().screen.handleComponentClicked(style);
                 }
                 return true;
             }
-            height += Minecraft.getInstance().font.lineHeight + 1;
+            height += Math.round(lineHeight + 2); // add back 2 for inter-line spacing
         }
         return false;
     }
@@ -128,8 +159,10 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
     public int getHeight(int width) {
         int lineCount = font.split(component, width + 1 - (2 * xSurround)).size();
         int lineHeight = font.lineHeight;
-        // explain this formula
-        return Math.round(scale * ((lineCount * lineHeight) + (lineCount - 2)) + (2 * ySurround));
+        //      lineCount * lineHeight  : clear enough
+        //      (lineCount - 2)         : plus 1 for each internal line--not the first or last
+        //      (2 * ySurround)         : plus the y surroundings fill & border
+        return Math.round(scale * ((lineCount * lineHeight) + (lineCount - 2) + (2 * ySurround)));
     }
 
     @Override
@@ -167,13 +200,13 @@ public class TextTagElement extends FillAndBorderElement implements TagElement {
         return TextTagProvider.INSTANCE;
     }
 
+    public int getLineWidth(FormattedCharSequence line) {
+        return font.width(line) + (2 * xSurround) - 1; // -1 to trim trailing empty space
+    }
+
     public int scaledOffsetForLine(int width, FormattedCharSequence text) {
         int lineWidth = font.width(text) + (2 * xSurround) - 1; // -1 to trim trailing empty space
         return Alignment.getOffset(width/scale, lineWidth, align);
     }
 
-    public int antiScaledOffsetForLine(int width, FormattedCharSequence text) {
-        int lineWidth = font.width(text) + (2 * xSurround) - 1; // -1 to trim trailing empty space
-        return Alignment.getOffset(width, scale * lineWidth, align);
-    }
 }
